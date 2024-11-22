@@ -8,7 +8,6 @@ on:
 
 env:
   DOCKER_IMAGE: myapp
-  REGISTRY: ghcr.io/${{ github.repository_owner }}
 
 jobs:
   build-and-test:
@@ -25,8 +24,11 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build and Test
       run: |
-        docker build -t ${{ env.REGISTRY }}/${{ env.DOCKER_IMAGE }}:${{ github.sha }} .
-        docker run --rm ${{ env.REGISTRY }}/${{ env.DOCKER_IMAGE }}:${{ github.sha }} npm test
+        # Convert repository owner to lowercase
+        export REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+        export REGISTRY=ghcr.io/$REPO_OWNER
+        docker build -t $REGISTRY/${{ env.DOCKER_IMAGE }}:${{ github.sha }} .
+        docker run --rm $REGISTRY/${{ env.DOCKER_IMAGE }}:${{ github.sha }} npm test
 
   deploy:
     needs: build-and-test
@@ -34,9 +36,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Deploy to Kubernetes
-      uses: wahyd4/kubectl-helm-action@master
       env:
         KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
-      with:
-        args: |
-          kubectl set image deployment/myapp-deployment myapp=${{ env.REGISTRY }}/${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+      run: |
+        # Convert repository owner to lowercase
+        export REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+        export REGISTRY=ghcr.io/$REPO_OWNER
+        kubectl set image deployment/myapp-deployment myapp=$REGISTRY/${{ env.DOCKER_IMAGE }}:${{ github.sha }}
