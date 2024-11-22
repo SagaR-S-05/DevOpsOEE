@@ -24,9 +24,9 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build and Test
       run: |
-        # Convert repository owner to lowercase
-        export REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-        export REGISTRY=ghcr.io/$REPO_OWNER
+        # Extract repository name from github.repository
+        export REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2 | tr '[:upper:]' '[:lower:]')
+        export REGISTRY=ghcr.io/$REPO_NAME
         docker build -t $REGISTRY/${{ env.DOCKER_IMAGE }}:${{ github.sha }} .
         docker run --rm $REGISTRY/${{ env.DOCKER_IMAGE }}:${{ github.sha }} npm test
 
@@ -39,7 +39,7 @@ jobs:
       env:
         KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
       run: |
-        # Convert repository owner to lowercase
-        export REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-        export REGISTRY=ghcr.io/$REPO_OWNER
+        # Extract repository name from github.repository
+        export REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2 | tr '[:upper:]' '[:lower:]')
+        export REGISTRY=ghcr.io/$REPO_NAME
         kubectl set image deployment/myapp-deployment myapp=$REGISTRY/${{ env.DOCKER_IMAGE }}:${{ github.sha }}
